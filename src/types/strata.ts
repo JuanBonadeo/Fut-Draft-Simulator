@@ -1,0 +1,47 @@
+export interface DataPoint {
+  year: number;
+  count: number;
+  normalized: number;
+}
+
+export type SourceId =
+  | "openlibrary"
+  | "wikipedia"
+  | "semanticscholar"
+  | "github"
+  | "nyt"
+  | "crossref";
+
+export interface SourceResult {
+  source: SourceId;
+  label: string;
+  description: string;
+  data: DataPoint[];
+  totalCount: number;
+  peakYear: number;
+  available: boolean;
+  error?: string;
+}
+
+export interface StrataRequest {
+  query: string;
+  yearStart?: number;
+  yearEnd?: number;
+}
+
+export interface StrataResponse {
+  query: string;
+  yearRange: { start: number; end: number };
+  sources: SourceResult[];
+  meta: {
+    fetchedAt: string;
+    durationMs: number;
+    sourcesAvailable: number;
+    sourcesFailed: number;
+  };
+}
+
+export interface RawYearCount {
+  year: number;
+  count: number;
+}
