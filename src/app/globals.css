@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09111f;
+  --background-soft: #101b30;
+  --card: rgba(10, 17, 31, 0.76);
+  --card-strong: rgba(13, 22, 39, 0.92);
+  --foreground: #edf3ff;
+  --muted: #98a6c3;
+  --accent: #6ee7c8;
+  --accent-strong: #34d3a8;
+  --border: rgba(255, 255, 255, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-soft: var(--background-soft);
+  --color-card: var(--card);
+  --color-card-strong: var(--card-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-border: var(--border);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  background-image:
+    radial-gradient(circle at top left, rgba(110, 231, 200, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(117, 161, 255, 0.15), transparent 24%),
+    linear-gradient(180deg, #0a1324 0%, #09111f 56%, #060b14 100%);
+  font-family: var(--font-manrope), sans-serif;
+  min-height: 100vh;
+}
+
+a,
+button,
+input {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+::selection {
+  background: rgba(110, 231, 200, 0.3);
+  color: #fff;
+}
