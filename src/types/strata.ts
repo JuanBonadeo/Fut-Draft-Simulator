@@ -10,7 +10,8 @@ export type SourceId =
   | "semanticscholar"
   | "github"
   | "nyt"
-  | "crossref";
+  | "crossref"
+  | "ngrams";
 
 export interface SourceResult {
   source: SourceId;

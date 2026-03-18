@@ -5,6 +5,7 @@ import { fetchOpenLibrary } from "@/lib/apis/openlibrary";
 import { buildUnavailableSourceResult, sanitizeYearRange } from "@/lib/apis/common";
 import { fetchSemanticScholar } from "@/lib/apis/semantic-scholar";
 import { fetchWikipediaPageviews } from "@/lib/apis/wikipedia";
+import { fetchNgrams } from "@/lib/apis/ngrams";
 import type { SourceResult, StrataResponse } from "@/types/strata";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -44,7 +45,7 @@ export async function GET(request: Request): Promise<Response> {
       description: string,
     ) => buildUnavailableSourceResult(sourceId, label, description, "Timeout");
 
-    const [wikipedia, openlibrary, crossref, semanticscholar, github, nyt] =
+    const [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, ngrams] =
       await Promise.all([
         withTimeout(
           fetchWikipediaPageviews(query, start, end),
@@ -76,9 +77,14 @@ export async function GET(request: Request): Promise<Response> {
           10000,
           timeoutFallback("nyt", "Media Coverage", "New York Times articles per year"),
         ),
+        withTimeout(
+          fetchNgrams(query, start, end),
+          8000,
+          timeoutFallback("ngrams", "Literature Frequency", "Frequency in published books per year (Google Books Ngrams)"),
+        ),
       ]);
 
-    const sources = [wikipedia, openlibrary, crossref, semanticscholar, github, nyt];
+    const sources = [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, ngrams];
     const sourcesAvailable = sources.filter((source) => source.available).length;
     const sourcesFailed = sources.length - sourcesAvailable;
     const durationMs = Date.now() - startedAt;
