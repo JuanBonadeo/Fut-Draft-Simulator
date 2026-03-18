@@ -12,12 +12,13 @@ interface OpenLibraryDoc {
   first_publish_year?: number | null;
 }
 
-interface OpenLibraryTopDoc {
+// Used by /subjects/{slug}.json endpoint (different shape from search API)
+interface OpenLibrarySubjectWork {
   title?: string;
-  author_name?: string[];
+  authors?: { key: string; name: string }[];
   first_publish_year?: number;
   edition_count?: number;
-  cover_i?: number;
+  cover_id?: number;
 }
 
 interface OpenLibraryResponse {
@@ -91,30 +92,37 @@ export async function fetchOpenLibraryTopBooks(
   yearEnd: number,
 ): Promise<Artifact[]> {
   try {
-    const endpoint =
-      `https://openlibrary.org/search.json` +
-      `?q=${encodeURIComponent(query)}` +
-      `&fields=key,title,author_name,first_publish_year,edition_count,cover_i` +
-      `&sort=editions&limit=50`;
+    // /subjects/{slug}.json uses Open Library's curated subject tags — more accurate than free-text search
+    const slug = query.toLowerCase().replace(/\s+/g, "_");
+    const endpoint = `https://openlibrary.org/subjects/${encodeURIComponent(slug)}.json?limit=100`;
 
-    console.log("[OpenLibrary] Fetching top books", { query, yearStart, yearEnd });
+    console.log("[OpenLibrary] Fetching top books by subject", { slug, yearStart, yearEnd });
 
     const res = await fetch(endpoint, { cache: "no-store" });
     if (!res.ok) return [];
-    const data = (await res.json()) as { docs?: OpenLibraryTopDoc[] };
+    const data = (await res.json()) as { works?: OpenLibrarySubjectWork[] };
 
-    return (data.docs ?? [])
+    // Filter out conference proceedings series — they dominate edition_count unfairly
+    const TITLE_NOISE = ["advances in", "proceedings", "workshop", "symposium", "knowledge discovery in databases"];
+    const AUTHOR_NOISE = ["conference", "society", "symposium", "workshop", "congress", "association"];
+    const isProceedings = (w: OpenLibrarySubjectWork) => {
+      const title = w.title?.toLowerCase() ?? "";
+      const author = w.authors?.[0]?.name?.toLowerCase() ?? "";
+      return TITLE_NOISE.some((n) => title.includes(n)) || AUTHOR_NOISE.some((n) => author.includes(n));
+    };
+
+    return (data.works ?? [])
       .filter((d) => {
         const y = d.first_publish_year;
-        return typeof y === "number" && y >= yearStart && y <= yearEnd;
+        return typeof y === "number" && y >= yearStart && y <= yearEnd && !isProceedings(d);
       })
       .map((d) => ({
         title: d.title ?? "Unknown",
-        author: d.author_name?.[0],
+        author: d.authors?.[0]?.name,
         year: d.first_publish_year!,
         score: d.edition_count ?? 0,
-        imageUrl: d.cover_i
-          ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`
+        imageUrl: d.cover_id
+          ? `https://covers.openlibrary.org/b/id/${d.cover_id}-M.jpg`
           : undefined,
         source: "openlibrary" as const,
       }))

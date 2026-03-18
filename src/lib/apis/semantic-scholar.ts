@@ -9,7 +9,7 @@ const SOURCE_ID = "semanticscholar" as const;
 const LABEL = "Academic Signals";
 const DESCRIPTION = "Semantic Scholar papers published per year";
 const PAGE_SIZE = 100;
-const MAX_RESULTS = 1000;
+const MAX_RESULTS = 500; // 5 pages × 1.1s sleep ≤ rate limit; 1000 causes 429 for subsequent requests
 
 interface SemanticScholarPaper {
   year?: number | null;
@@ -38,9 +38,11 @@ export async function fetchSemanticScholar(
     while (hasMore && offset < MAX_RESULTS) {
       const endpoint = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${PAGE_SIZE}&fields=year,citationCount`;
 
+      const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
       const response = await fetch(endpoint, {
         headers: {
           Accept: "application/json",
+          ...(apiKey ? { "x-api-key": apiKey } : {}),
         },
         cache: "no-store",
       });
@@ -77,7 +79,7 @@ export async function fetchSemanticScholar(
       offset = typeof nextOffset === "number" ? nextOffset : offset + PAGE_SIZE;
 
       if (hasMore) {
-        await sleep(250);
+        await sleep(1100); // respect 1 req/sec public rate limit
       }
     }
 

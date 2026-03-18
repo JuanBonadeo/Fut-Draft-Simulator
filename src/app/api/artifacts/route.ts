@@ -1,4 +1,4 @@
-import { sanitizeYearRange } from "@/lib/apis/common";
+import { sanitizeYearRange, sleep } from "@/lib/apis/common";
 import { fetchOpenLibraryTopBooks } from "@/lib/apis/openlibrary";
 import type { Artifact, ArtifactsResponse, DecadeArtifacts } from "@/types/strata";
 
@@ -25,9 +25,20 @@ async function fetchPapers(query: string, yearStart: number, yearEnd: number): P
       `https://api.semanticscholar.org/graph/v1/paper/search` +
       `?query=${encodeURIComponent(query)}` +
       `&fields=title,year,citationCount,authors,externalIds` +
+      `&year=${yearStart}-${yearEnd}` +
       `&offset=0&limit=100`;
 
-    const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
+    const ssApiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
+    const ssHeaders: HeadersInit = {
+      Accept: "application/json",
+      ...(ssApiKey ? { "x-api-key": ssApiKey } : {}),
+    };
+    let res = await fetch(url, { cache: "no-store", headers: ssHeaders });
+    if (res.status === 429) {
+      console.warn("[Artifacts/Papers] Rate limited, retrying after 2s");
+      await sleep(2000);
+      res = await fetch(url, { cache: "no-store", headers: ssHeaders });
+    }
     if (!res.ok) return [];
     const data = (await res.json()) as { data?: SSPaper[] };
 
@@ -57,18 +68,35 @@ async function fetchMovies(query: string, yearStart: number, yearEnd: number): P
   if (!apiKey) return [];
 
   try {
-    const url =
-      `https://api.themoviedb.org/3/search/movie` +
-      `?query=${encodeURIComponent(query)}&api_key=${apiKey}&page=1`;
+    // Step 1: resolve query to a TMDB keyword ID for accurate topic matching
+    const kwRes = await fetch(
+      `https://api.themoviedb.org/3/search/keyword?query=${encodeURIComponent(query)}&api_key=${apiKey}`,
+      { cache: "no-store" },
+    );
+    const kwData = kwRes.ok
+      ? ((await kwRes.json()) as { results?: { id: number; name: string }[] })
+      : { results: [] };
+    // Combine all matching keyword IDs with OR (|) for maximum coverage
+    const keywordIds = kwData.results?.map((k) => k.id).join("|");
 
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { results?: TmdbSearchMovie[] };
+    // Step 2: fetch 2 pages in parallel — discover by keyword (better) or title search (fallback)
+    const fetchPage = async (page: number): Promise<TmdbSearchMovie[]> => {
+      const url = keywordIds
+        ? `https://api.themoviedb.org/3/discover/movie?with_keywords=${keywordIds}&sort_by=vote_count.desc&api_key=${apiKey}&page=${page}`
+        : `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&api_key=${apiKey}&page=${page}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return [];
+      const data = (await res.json()) as { results?: TmdbSearchMovie[] };
+      return data.results ?? [];
+    };
 
-    return (data.results ?? [])
+    const [page1, page2] = await Promise.all([fetchPage(1), fetchPage(2)]);
+    const allResults = [...page1, ...page2];
+
+    return allResults
       .filter((m) => {
         const y = Number(m.release_date?.slice(0, 4));
-        return Number.isFinite(y) && y >= yearStart && y <= yearEnd && (m.vote_count ?? 0) > 200;
+        return Number.isFinite(y) && y >= yearStart && y <= yearEnd && (m.vote_count ?? 0) > 50;
       })
       .map((m) => ({
         title: m.title ?? "Unknown",
