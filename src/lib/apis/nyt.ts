@@ -7,45 +7,28 @@ import type { RawYearCount, SourceResult } from "@/types/strata";
 
 const SOURCE_ID = "nyt" as const;
 const LABEL = "Media Coverage";
-const DESCRIPTION = "Estimated New York Times articles per year";
+const DESCRIPTION = "New York Times articles per year";
 const REPRESENTATIVE_YEARS = [1995, 2000, 2005, 2010, 2015, 2020, 2025];
 
-interface NYTArticle {
-  headline?: {
-    main?: string;
-  };
-  abstract?: string;
-  lead_paragraph?: string;
-  snippet?: string;
-}
-
-interface NYTArchiveResponse {
+interface NYTSearchResponse {
   response?: {
-    docs?: NYTArticle[];
+    meta?: {
+      hits?: number;
+    };
   };
 }
 
-function containsQuery(article: NYTArticle, normalizedQuery: string): boolean {
-  const content = [
-    article.headline?.main,
-    article.abstract,
-    article.lead_paragraph,
-    article.snippet,
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return content.includes(normalizedQuery);
-}
-
-async function fetchArchiveMonth(
+async function fetchNYTYear(
   year: number,
-  month: number,
   apiKey: string,
   query: string,
-): Promise<NYTArchiveResponse> {
-  const endpoint = `https://api.nytimes.com/svc/archive/v1/${year}/${month}.json?api-key=${apiKey}`;
+): Promise<RawYearCount> {
+  const endpoint =
+    `https://api.nytimes.com/svc/search/v2/articlesearch.json` +
+    `?q=${encodeURIComponent(query)}` +
+    `&fq=pub_year:(${year})` +
+    `&facet_field=pub_year&facet=true` +
+    `&api-key=${apiKey}`;
 
   let attempt = 0;
   let backoffMs = 2000;
@@ -68,7 +51,10 @@ async function fetchArchiveMonth(
       throw new Error(`NYT request failed: ${response.status} ${response.statusText}`);
     }
 
-    return (await response.json()) as NYTArchiveResponse;
+    const data = (await response.json()) as NYTSearchResponse;
+    const count = data.response?.meta?.hits ?? 0;
+
+    return { year, count };
   }
 
   throw new Error(`NYT request exhausted retries for year ${year}`);
@@ -91,7 +77,6 @@ export async function fetchNYT(
       );
     }
 
-    const normalizedQuery = query.toLowerCase();
     const sampleYears = REPRESENTATIVE_YEARS.filter(
       (year) => year >= yearStart && year <= yearEnd,
     );
@@ -111,18 +96,11 @@ export async function fetchNYT(
 
     for (let index = 0; index < sampleYears.length; index += 1) {
       const year = sampleYears[index];
-      const payload = await fetchArchiveMonth(year, 1, apiKey, query);
-      const matches = (payload.response?.docs ?? []).filter((article) =>
-        containsQuery(article, normalizedQuery),
-      );
-
-      rawData.push({
-        year,
-        count: matches.length * 12,
-      });
+      const point = await fetchNYTYear(year, apiKey, query);
+      rawData.push(point);
 
       if (index < sampleYears.length - 1) {
-        await sleep(2000);
+        await sleep(1100);
       }
     }
 

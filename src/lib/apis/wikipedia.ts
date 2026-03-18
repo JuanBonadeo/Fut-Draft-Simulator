@@ -26,6 +26,14 @@ function buildWikipediaTopic(query: string): string {
   return underscored[0].toUpperCase() + underscored.slice(1);
 }
 
+async function resolveCanonicalTitle(query: string): Promise<string> {
+  const url =
+    `https://en.wikipedia.org/w/api.php?action=query&list=search` +
+    `&srsearch=${encodeURIComponent(query)}&format=json&srlimit=1&origin=*`;
+  const data = await fetch(url, { cache: "no-store" }).then((r) => r.json());
+  return (data.query?.search?.[0]?.title as string | undefined) ?? buildWikipediaTopic(query);
+}
+
 function buildMonthlyDateRange(yearStart: number, yearEnd: number): {
   startDate: string;
   endDate: string;
@@ -52,7 +60,7 @@ export async function fetchWikipediaPageviews(
   yearEnd: number,
 ): Promise<SourceResult> {
   try {
-    const topic = buildWikipediaTopic(query);
+    const topic = await resolveCanonicalTitle(query);
     if (!topic) {
       throw new Error("Query cannot be empty");
     }

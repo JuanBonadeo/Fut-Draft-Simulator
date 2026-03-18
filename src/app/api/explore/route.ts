@@ -2,10 +2,15 @@ import { fetchCrossRef } from "@/lib/apis/crossref";
 import { fetchGitHub } from "@/lib/apis/github";
 import { fetchNYT } from "@/lib/apis/nyt";
 import { fetchOpenLibrary } from "@/lib/apis/openlibrary";
-import { sanitizeYearRange } from "@/lib/apis/common";
+import { buildUnavailableSourceResult, sanitizeYearRange } from "@/lib/apis/common";
 import { fetchSemanticScholar } from "@/lib/apis/semantic-scholar";
 import { fetchWikipediaPageviews } from "@/lib/apis/wikipedia";
-import type { StrataResponse } from "@/types/strata";
+import type { SourceResult, StrataResponse } from "@/types/strata";
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  const timeout = new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms));
+  return Promise.race([promise, timeout]);
+}
 
 export async function GET(request: Request): Promise<Response> {
   const startedAt = Date.now();
@@ -33,14 +38,44 @@ export async function GET(request: Request): Promise<Response> {
 
     console.log("[ExploreAPI] Fetch start", { query, start, end });
 
+    const timeoutFallback = (
+      sourceId: SourceResult["source"],
+      label: string,
+      description: string,
+    ) => buildUnavailableSourceResult(sourceId, label, description, "Timeout");
+
     const [wikipedia, openlibrary, crossref, semanticscholar, github, nyt] =
       await Promise.all([
-        fetchWikipediaPageviews(query, start, end),
-        fetchOpenLibrary(query, start, end),
-        fetchCrossRef(query, start, end),
-        fetchSemanticScholar(query, start, end),
-        fetchGitHub(query, start, end),
-        fetchNYT(query, start, end),
+        withTimeout(
+          fetchWikipediaPageviews(query, start, end),
+          8000,
+          timeoutFallback("wikipedia", "Public Interest", "Wikipedia pageviews per year"),
+        ),
+        withTimeout(
+          fetchOpenLibrary(query, start, end),
+          10000,
+          timeoutFallback("openlibrary", "Books Published", "Books first published per year from Open Library"),
+        ),
+        withTimeout(
+          fetchCrossRef(query, start, end),
+          8000,
+          timeoutFallback("crossref", "Scientific Papers", "Papers indexed by Crossref per year"),
+        ),
+        withTimeout(
+          fetchSemanticScholar(query, start, end),
+          12000,
+          timeoutFallback("semanticscholar", "Academic Signals", "Semantic Scholar papers published per year"),
+        ),
+        withTimeout(
+          fetchGitHub(query, start, end),
+          15000,
+          timeoutFallback("github", "Developer Adoption", "GitHub repositories created per year"),
+        ),
+        withTimeout(
+          fetchNYT(query, start, end),
+          10000,
+          timeoutFallback("nyt", "Media Coverage", "New York Times articles per year"),
+        ),
       ]);
 
     const sources = [wikipedia, openlibrary, crossref, semanticscholar, github, nyt];
