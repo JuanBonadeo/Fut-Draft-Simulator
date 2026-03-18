@@ -13,8 +13,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hackathon Template",
-  description: "Next.js, Prisma, Neon and Better Auth starter template.",
+  title: "STRATA | Cultural Intelligence Explorer",
+  description:
+    "Interactive SaaS platform to explore how ideas emerge, evolve, and spread across GitHub, Wikipedia, OpenLibrary, arXiv, and NYT.",
 };
 
 export default function RootLayout({

@@ -5,10 +5,12 @@
   --background-soft: #101b30;
   --card: rgba(10, 17, 31, 0.76);
   --card-strong: rgba(13, 22, 39, 0.92);
+  --card-lifted: rgba(16, 28, 48, 0.86);
   --foreground: #edf3ff;
   --muted: #98a6c3;
   --accent: #6ee7c8;
   --accent-strong: #34d3a8;
+  --accent-secondary: #7dd3fc;
   --border: rgba(255, 255, 255, 0.12);
 }
 
@@ -17,10 +19,12 @@
   --color-background-soft: var(--background-soft);
   --color-card: var(--card);
   --color-card-strong: var(--card-strong);
+  --color-card-lifted: var(--card-lifted);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-secondary: var(--accent-secondary);
   --color-border: var(--border);
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-jetbrains-mono);
@@ -59,4 +63,30 @@ input {
 ::selection {
   background: rgba(110, 231, 200, 0.3);
   color: #fff;
+}
+
+.bg-grid-strata {
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.08) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(130deg, rgba(19, 33, 56, 0.78), rgba(9, 17, 31, 0.7)),
+    rgba(9, 17, 31, 0.5);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.neon-ring {
+  box-shadow:
+    0 0 0 1px rgba(110, 231, 200, 0.5),
+    0 0 24px rgba(110, 231, 200, 0.35),
+    0 14px 45px rgba(52, 211, 168, 0.25);
 }
