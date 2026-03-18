@@ -46,3 +46,29 @@ export interface RawYearCount {
   year: number;
   count: number;
 }
+
+export interface Artifact {
+  title: string;
+  author?: string;
+  year: number;
+  score: number;
+  url?: string;
+  imageUrl?: string;
+  source: "openlibrary" | "semanticscholar" | "tmdb";
+}
+
+export interface DecadeArtifacts {
+  decade: number;
+  book?: Artifact;
+  paper?: Artifact;
+  movie?: Artifact;
+}
+
+export interface ArtifactsResponse {
+  query: string;
+  yearRange: { start: number; end: number };
+  books: Artifact[];
+  papers: Artifact[];
+  movies: Artifact[];
+  byDecade: DecadeArtifacts[];
+}

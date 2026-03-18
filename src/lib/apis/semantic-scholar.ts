@@ -36,7 +36,7 @@ export async function fetchSemanticScholar(
     let hasMore = true;
 
     while (hasMore && offset < MAX_RESULTS) {
-      const endpoint = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${PAGE_SIZE}&fields=year`;
+      const endpoint = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${PAGE_SIZE}&fields=year,citationCount`;
 
       const response = await fetch(endpoint, {
         headers: {
