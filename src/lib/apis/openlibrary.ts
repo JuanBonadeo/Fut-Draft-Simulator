@@ -2,7 +2,7 @@ import {
   buildSourceResult,
   buildUnavailableSourceResult,
 } from "@/lib/apis/common";
-import type { Artifact, RawYearCount, SourceResult } from "@/types/strata";
+kwimport type { Artifact, RawYearCount, SourceResult } from "@/types/strata";
 
 const SOURCE_ID = "openlibrary" as const;
 const LABEL = "Books Published";
