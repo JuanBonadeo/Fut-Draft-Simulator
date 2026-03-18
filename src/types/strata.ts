@@ -11,7 +11,7 @@ export type SourceId =
   | "github"
   | "nyt"
   | "crossref"
-  | "ngrams";
+  | "tmdb";
 
 export interface SourceResult {
   source: SourceId;

@@ -5,7 +5,7 @@ import { fetchOpenLibrary } from "@/lib/apis/openlibrary";
 import { buildUnavailableSourceResult, sanitizeYearRange } from "@/lib/apis/common";
 import { fetchSemanticScholar } from "@/lib/apis/semantic-scholar";
 import { fetchWikipediaPageviews } from "@/lib/apis/wikipedia";
-import { fetchNgrams } from "@/lib/apis/ngrams";
+import { fetchTmdb } from "@/lib/apis/tmdb";
 import type { SourceResult, StrataResponse } from "@/types/strata";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -45,7 +45,7 @@ export async function GET(request: Request): Promise<Response> {
       description: string,
     ) => buildUnavailableSourceResult(sourceId, label, description, "Timeout");
 
-    const [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, ngrams] =
+    const [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, tmdb] =
       await Promise.all([
         withTimeout(
           fetchWikipediaPageviews(query, start, end),
@@ -78,13 +78,13 @@ export async function GET(request: Request): Promise<Response> {
           timeoutFallback("nyt", "Media Coverage", "New York Times articles per year"),
         ),
         withTimeout(
-          fetchNgrams(query, start, end),
-          8000,
-          timeoutFallback("ngrams", "Literature Frequency", "Frequency in published books per year (Google Books Ngrams)"),
+          fetchTmdb(query, start, end),
+          10000,
+          timeoutFallback("tmdb", "Film & TV", "Movies and series mentioning this concept per year (TMDB)"),
         ),
       ]);
 
-    const sources = [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, ngrams];
+    const sources = [wikipedia, openlibrary, crossref, semanticscholar, github, nyt, tmdb];
     const sourcesAvailable = sources.filter((source) => source.available).length;
     const sourcesFailed = sources.length - sourcesAvailable;
     const durationMs = Date.now() - startedAt;
