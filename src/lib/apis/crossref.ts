@@ -67,6 +67,10 @@ export async function fetchCrossRef(
       (item) => item.year >= yearStart && item.year <= yearEnd,
     );
 
+    if (rawData.length === 0) {
+      console.warn("[CrossRef] Zero academic results for topic:", query);
+    }
+
     const result = buildSourceResult(SOURCE_ID, LABEL, DESCRIPTION, rawData);
     console.log("[CrossRef] Completed", {
       available: result.available,

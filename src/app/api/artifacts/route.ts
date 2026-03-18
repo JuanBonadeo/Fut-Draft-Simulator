@@ -1,13 +1,6 @@
 import { sanitizeYearRange } from "@/lib/apis/common";
+import { fetchOpenLibraryTopBooks } from "@/lib/apis/openlibrary";
 import type { Artifact, ArtifactsResponse, DecadeArtifacts } from "@/types/strata";
-
-interface OLDoc {
-  title?: string;
-  author_name?: string[];
-  first_publish_year?: number;
-  edition_count?: number;
-  cover_i?: number;
-}
 
 interface SSPaper {
   title?: string;
@@ -25,36 +18,6 @@ interface TmdbSearchMovie {
   poster_path?: string | null;
 }
 
-async function fetchBooks(query: string, yearStart: number, yearEnd: number): Promise<Artifact[]> {
-  try {
-    const url =
-      `https://openlibrary.org/search.json` +
-      `?q=${encodeURIComponent(query)}` +
-      `&fields=key,title,author_name,first_publish_year,edition_count,cover_i` +
-      `&sort=editions&limit=50`;
-
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { docs?: OLDoc[] };
-
-    return (data.docs ?? [])
-      .filter((d) => {
-        const y = d.first_publish_year;
-        return typeof y === "number" && y >= yearStart && y <= yearEnd;
-      })
-      .map((d) => ({
-        title: d.title ?? "Unknown",
-        author: d.author_name?.[0],
-        year: d.first_publish_year!,
-        score: d.edition_count ?? 0,
-        imageUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : undefined,
-        source: "openlibrary" as const,
-      }))
-      .sort((a, b) => b.score - a.score);
-  } catch {
-    return [];
-  }
-}
 
 async function fetchPapers(query: string, yearStart: number, yearEnd: number): Promise<Artifact[]> {
   try {
@@ -155,7 +118,7 @@ export async function GET(request: Request): Promise<Response> {
   );
 
   const [books, papers, movies] = await Promise.all([
-    fetchBooks(query, start, end),
+    fetchOpenLibraryTopBooks(query, start, end),
     fetchPapers(query, start, end),
     fetchMovies(query, start, end),
   ]);
