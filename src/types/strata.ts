@@ -72,3 +72,24 @@ export interface ArtifactsResponse {
   movies: Artifact[];
   byDecade: DecadeArtifacts[];
 }
+
+export interface MonthlyDataPoint {
+  year: number;
+  month: number; // 1–12
+  count: number;
+}
+
+export interface TimeSeries {
+  id: "wikipedia" | "books" | "papers" | "movies" | "news";
+  label: string;
+  available: boolean;
+  error?: string;
+  data: MonthlyDataPoint[];
+}
+
+export interface Explore3DResponse {
+  query: string;
+  startDate: string; // "2015-07"
+  endDate: string;   // e.g. "2026-03"
+  series: TimeSeries[];
+}

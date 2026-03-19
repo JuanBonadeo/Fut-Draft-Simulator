@@ -2,7 +2,7 @@ import {
   buildSourceResult,
   buildUnavailableSourceResult,
 } from "@/lib/apis/common";
-kwimport type { Artifact, RawYearCount, SourceResult } from "@/types/strata";
+import type { Artifact, MonthlyDataPoint, RawYearCount, SourceResult, TimeSeries } from "@/types/strata";
 
 const SOURCE_ID = "openlibrary" as const;
 const LABEL = "Books Published";
@@ -129,5 +129,72 @@ export async function fetchOpenLibraryTopBooks(
       .sort((a, b) => b.score - a.score);
   } catch {
     return [];
+  }
+}
+
+// ─── explore3d: monthly series ────────────────────────────────────────────────
+
+/** Distribute a yearly total uniformly across 12 months. */
+function spreadAcrossMonths(year: number, yearTotal: number): MonthlyDataPoint[] {
+  const perMonth = Math.round(yearTotal / 12);
+  return Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1, count: perMonth }));
+}
+
+export async function fetchOpenLibraryMonthly(query: string): Promise<TimeSeries> {
+  const ID = "books" as const;
+  const LABEL = "Books Published";
+  const currentYear = new Date().getFullYear();
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 10;
+
+  try {
+    console.log("[Explore3D][OpenLibrary] Fetching", { query });
+
+    const yearlyMap = new Map<number, number>();
+    let offset = 0;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const url =
+        `https://openlibrary.org/search.json` +
+        `?q=${encodeURIComponent(query)}` +
+        `&fields=first_publish_year` +
+        `&limit=${PAGE_SIZE}` +
+        `&offset=${offset}`;
+
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) break;
+
+      const data = (await res.json()) as { docs?: { first_publish_year?: unknown }[] };
+      const docs = data.docs ?? [];
+      if (docs.length === 0) break;
+
+      let allBelow2015 = true;
+      for (const doc of docs) {
+        const year = doc.first_publish_year;
+        if (typeof year !== "number" || year < 1800 || year > 2100) continue;
+        if (year >= 2015 && year <= currentYear) {
+          allBelow2015 = false;
+          yearlyMap.set(year, (yearlyMap.get(year) ?? 0) + 1);
+        } else if (year >= 2015) {
+          allBelow2015 = false;
+        }
+      }
+
+      if (allBelow2015) break;
+      offset += PAGE_SIZE;
+      if (page < MAX_PAGES - 1) await new Promise((r) => setTimeout(r, 500));
+    }
+
+    const points: MonthlyDataPoint[] = [];
+    for (const [year, total] of [...yearlyMap.entries()].sort((a, b) => a[0] - b[0])) {
+      points.push(...spreadAcrossMonths(year, total));
+    }
+
+    console.log("[Explore3D][OpenLibrary] Done", { years: yearlyMap.size, points: points.length });
+    return { id: ID, label: LABEL, available: true, data: points };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Explore3D][OpenLibrary] Error", msg);
+    return { id: ID, label: LABEL, available: false, error: msg, data: [] };
   }
 }

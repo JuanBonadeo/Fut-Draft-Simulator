@@ -1,121 +1,89 @@
-import {
-  buildSourceResult,
-  buildUnavailableSourceResult,
-  sleep,
-} from "@/lib/apis/common";
-import type { RawYearCount, SourceResult } from "@/types/strata";
+import type { MonthlyDataPoint, TimeSeries } from "@/types/strata";
 
-const SOURCE_ID = "nyt" as const;
-const LABEL = "Media Coverage";
-const DESCRIPTION = "New York Times articles per year";
-const REPRESENTATIVE_YEARS = [1995, 2000, 2005, 2010, 2015, 2020, 2025];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface NYTSearchResponse {
+interface NytArticleSearchResponse {
+  status: string;
   response?: {
-    meta?: {
-      hits?: number;
-    };
+    meta?: { hits: number };
   };
 }
 
-async function fetchNYTYear(
-  year: number,
-  apiKey: string,
-  query: string,
-): Promise<RawYearCount> {
-  const endpoint =
+// ─── Single-year fetch ────────────────────────────────────────────────────────
+
+/**
+ * Fetch the total article count for a given year.
+ * Uses begin_date/end_date + fl=_id so the payload is minimal;
+ * the actual count comes from response.meta.hits.
+ */
+async function fetchNytYear(query: string, year: number, apiKey: string): Promise<number> {
+  const url =
     `https://api.nytimes.com/svc/search/v2/articlesearch.json` +
     `?q=${encodeURIComponent(query)}` +
-    `&fq=pub_year:(${year})` +
-    `&facet_field=pub_year&facet=true` +
+    `&begin_date=${year}0101` +
+    `&end_date=${year}1231` +
+    `&fl=_id` +
     `&api-key=${apiKey}`;
 
-  let attempt = 0;
-  let backoffMs = 2000;
+  const res = await fetch(url, { cache: "no-store" });
+  if (res.status === 429) throw new Error("NYT rate limited");
+  if (!res.ok) throw new Error(`NYT ${res.status}`);
 
-  while (attempt < 3) {
-    const response = await fetch(endpoint, { cache: "no-store" });
-
-    if (response.status === 429) {
-      attempt += 1;
-      if (attempt >= 3) {
-        throw new Error(`NYT rate limit reached for year ${year} query ${query}`);
-      }
-
-      await sleep(backoffMs);
-      backoffMs *= 2;
-      continue;
-    }
-
-    if (!response.ok) {
-      throw new Error(`NYT request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as NYTSearchResponse;
-    const count = data.response?.meta?.hits ?? 0;
-
-    return { year, count };
-  }
-
-  throw new Error(`NYT request exhausted retries for year ${year}`);
+  const data = (await res.json()) as NytArticleSearchResponse;
+  return data.response?.meta?.hits ?? 0;
 }
 
-export async function fetchNYT(
-  query: string,
-  yearStart: number,
-  yearEnd: number,
-): Promise<SourceResult> {
+// ─── Fetcher ──────────────────────────────────────────────────────────────────
+
+/**
+ * Returns monthly article counts by distributing each year's total
+ * uniformly across its months. NYT rate limit is 10 req/min, so we
+ * add a small pause between requests (~11 total for 2015→today).
+ */
+export async function fetchNytMonthly(query: string, apiKey: string): Promise<TimeSeries> {
+  const ID = "news" as const;
+  const LABEL = "News Articles";
+
   try {
-    const apiKey = process.env.NYT_API_KEY;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-    if (!apiKey) {
-      return buildUnavailableSourceResult(
-        SOURCE_ID,
-        LABEL,
-        DESCRIPTION,
-        "NYT_API_KEY is not configured",
-      );
-    }
+    const years = Array.from({ length: currentYear - 2015 + 1 }, (_, i) => 2015 + i);
+    const points: MonthlyDataPoint[] = [];
 
-    const sampleYears = REPRESENTATIVE_YEARS.filter(
-      (year) => year >= yearStart && year <= yearEnd,
-    );
+    console.log(`[Explore3D][NYT] Fetching ${years.length} years`);
 
-    if (sampleYears.length === 0) {
-      return buildUnavailableSourceResult(
-        SOURCE_ID,
-        LABEL,
-        DESCRIPTION,
-        "No representative years available for selected range",
-      );
-    }
+    for (const year of years) {
+      try {
+        const total = await fetchNytYear(query, year, apiKey);
 
-    console.log("[NYT] Fetching", { query, sampleYears });
+        // 2015 starts from July; current year stops before the current (incomplete) month
+        const startMonth = year === 2015 ? 7 : 1;
+        const endMonth = year === currentYear ? currentMonth - 1 : 12;
 
-    const rawData: RawYearCount[] = [];
+        if (endMonth >= startMonth) {
+          const perMonth = Math.round(total / (endMonth - startMonth + 1));
+          for (let m = startMonth; m <= endMonth; m++) {
+            points.push({ year, month: m, count: perMonth });
+          }
+        }
 
-    for (let index = 0; index < sampleYears.length; index += 1) {
-      const year = sampleYears[index];
-      const point = await fetchNYTYear(year, apiKey, query);
-      rawData.push(point);
-
-      if (index < sampleYears.length - 1) {
-        await sleep(1100);
+        console.log(`[Explore3D][NYT] ${year}: ${total} articles`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[Explore3D][NYT] Failed ${year}:`, msg);
       }
+
+      // Stay within the 10 req/min rate limit
+      await new Promise((r) => setTimeout(r, 200));
     }
 
-    const nonZeroData = rawData.filter((item) => item.count > 0);
-    const result = buildSourceResult(SOURCE_ID, LABEL, DESCRIPTION, nonZeroData);
-
-    console.log("[NYT] Completed", {
-      available: result.available,
-      points: result.data.length,
-      totalCount: result.totalCount,
-    });
-
-    return result;
+    console.log(`[Explore3D][NYT] Complete: ${points.length} months`);
+    return { id: ID, label: LABEL, available: points.some((p) => p.count > 0), data: points };
   } catch (error) {
-    console.error("[NYT]", error);
-    return buildUnavailableSourceResult(SOURCE_ID, LABEL, DESCRIPTION, error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Explore3D][NYT] Error", msg);
+    return { id: ID, label: LABEL, available: false, error: msg, data: [] };
   }
 }
