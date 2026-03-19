@@ -354,6 +354,25 @@ select:focus-visible {
   color: rgba(255, 255, 255, 0.82);
 }
 
+.strata-hero-minimal {
+  padding-top: max(3.5rem, 8vh);
+  padding-bottom: max(3.5rem, 8vh);
+}
+
+.strata-hero-search-shell {
+  width: min(100%, 48rem);
+}
+
+.strata-reveal-shell {
+  isolation: isolate;
+}
+
+.strata-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
 @media (max-width: 640px) {
   .strata-shell {
     width: min(1180px, calc(100% - 1.25rem));
@@ -386,5 +405,11 @@ select:focus-visible {
 
   .strata-kpi-ribbon {
     padding: 0.62rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .strata-footer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
