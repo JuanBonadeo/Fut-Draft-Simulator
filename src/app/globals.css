@@ -3,12 +3,17 @@
 :root {
   --background: #09111f;
   --background-soft: #101b30;
+  --background-band: #0c1629;
+  --background-band-alt: #0e1a31;
   --card: rgba(10, 17, 31, 0.76);
   --card-strong: rgba(13, 22, 39, 0.92);
+  --card-lifted: rgba(16, 28, 48, 0.86);
   --foreground: #edf3ff;
   --muted: #98a6c3;
   --accent: #6ee7c8;
   --accent-strong: #34d3a8;
+  --accent-secondary: #7dd3fc;
+  --accent-highlight: #f59e0b;
   --border: rgba(255, 255, 255, 0.12);
 }
 
@@ -17,10 +22,13 @@
   --color-background-soft: var(--background-soft);
   --color-card: var(--card);
   --color-card-strong: var(--card-strong);
+  --color-card-lifted: var(--card-lifted);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-highlight: var(--accent-highlight);
   --color-border: var(--border);
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-jetbrains-mono);
@@ -38,9 +46,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   background-image:
-    radial-gradient(circle at top left, rgba(110, 231, 200, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(117, 161, 255, 0.15), transparent 24%),
-    linear-gradient(180deg, #0a1324 0%, #09111f 56%, #060b14 100%);
+    radial-gradient(circle at top left, rgba(110, 231, 200, 0.13), transparent 32%),
+    radial-gradient(circle at top right, rgba(117, 161, 255, 0.1), transparent 28%),
+    linear-gradient(180deg, #091220 0%, #070f1d 52%, #060b14 100%);
   font-family: var(--font-manrope), sans-serif;
   min-height: 100vh;
 }
@@ -57,6 +65,351 @@ input {
 }
 
 ::selection {
-  background: rgba(110, 231, 200, 0.3);
+  background: rgba(245, 158, 11, 0.35);
   color: #fff;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.75);
+  outline-offset: 2px;
+}
+
+.bg-grid-strata {
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.08) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(130deg, rgba(19, 33, 56, 0.78), rgba(9, 17, 31, 0.7)),
+    rgba(9, 17, 31, 0.5);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.neon-ring {
+  box-shadow:
+    0 0 0 1px rgba(110, 231, 200, 0.5),
+    0 0 24px rgba(110, 231, 200, 0.35),
+    0 14px 45px rgba(52, 211, 168, 0.25);
+}
+
+.strata-shell {
+  position: relative;
+  margin: 0 auto;
+  width: min(1180px, calc(100% - 2rem));
+}
+
+.strata-band {
+  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(120deg, rgba(10, 19, 36, 0.83), rgba(6, 12, 24, 0.76));
+  isolation: isolate;
+}
+
+.strata-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(125, 211, 252, 0.04) 0%,
+    rgba(52, 211, 168, 0.02) 48%,
+    rgba(15, 23, 42, 0.05) 100%
+  );
+  z-index: -1;
+}
+
+.strata-band::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 44px;
+  opacity: 0.45;
+  z-index: -1;
+}
+
+.strata-band--nav {
+  background: linear-gradient(95deg, rgba(10, 18, 33, 0.8), rgba(8, 15, 28, 0.72));
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.strata-kpi-ribbon {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: linear-gradient(120deg, rgba(9, 17, 33, 0.76), rgba(7, 13, 25, 0.68));
+  padding: 0.75rem;
+  backdrop-filter: blur(14px);
+}
+
+.strata-nav-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: rgba(7, 14, 26, 0.5);
+  padding: 0.55rem 0.95rem;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.strata-kpi-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.65rem 0.8rem;
+}
+
+.strata-kpi-label {
+  font-size: 0.67rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.strata-kpi-value {
+  margin-top: 0.26rem;
+  font-size: clamp(1.08rem, 1.5vw, 1.32rem);
+  font-weight: 600;
+  color: #f8fbff;
+}
+
+.strata-kpi-meta {
+  margin-top: 0.16rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  color: rgba(191, 219, 254, 0.85);
+}
+
+.storyline-rail {
+  position: fixed;
+  top: 50%;
+  left: max(2px, calc((100vw - 1180px) / 2 - 205px));
+  transform: translateY(-50%);
+  z-index: 30;
+  display: none;
+  width: 166px;
+  padding-left: 22px;
+}
+
+.storyline-rail-line {
+  position: absolute;
+  left: 38px;
+  top: 2px;
+  bottom: 2px;
+  width: 2.5px;
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.9), rgba(245, 158, 11, 0.35));
+  opacity: 0.78;
+}
+
+.storyline-node {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding-left: 1.85rem;
+  color: rgba(173, 192, 216, 0.82);
+}
+
+.storyline-node-dot {
+  position: absolute;
+  left: -0.28rem;
+  top: 0.4rem;
+  height: 0.92rem;
+  width: 0.92rem;
+  border-radius: 9999px;
+  background: rgba(125, 211, 252, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(9, 17, 31, 0.6);
+}
+
+.storyline-node-index {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+}
+
+.storyline-node-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.storyline-node--active {
+  color: #f8fafc;
+}
+
+.storyline-node--active .storyline-node-dot {
+  background: rgba(245, 158, 11, 0.92);
+  box-shadow:
+    0 0 0 2px rgba(9, 17, 31, 0.75),
+    0 0 20px rgba(245, 158, 11, 0.35);
+}
+
+.strata-chart-frame-timeline {
+  height: clamp(17.5rem, 28vw, 31rem);
+}
+
+.strata-chart-frame-secondary {
+  height: clamp(16rem, 24vw, 26rem);
+}
+
+.strata-band--hero {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(125, 211, 252, 0.2), transparent 30%),
+    radial-gradient(circle at 78% 28%, rgba(245, 158, 11, 0.08), transparent 30%),
+    linear-gradient(120deg, rgba(12, 24, 46, 0.92), rgba(8, 15, 30, 0.86));
+}
+
+.strata-band--sources {
+  background:
+    radial-gradient(circle at 85% 15%, rgba(52, 211, 168, 0.16), transparent 34%),
+    radial-gradient(circle at 20% 75%, rgba(59, 130, 246, 0.1), transparent 35%),
+    linear-gradient(120deg, rgba(9, 19, 35, 0.9), rgba(7, 14, 26, 0.8));
+}
+
+.strata-band--timeline {
+  background:
+    radial-gradient(circle at 10% 60%, rgba(59, 130, 246, 0.16), transparent 38%),
+    radial-gradient(circle at 86% 18%, rgba(125, 211, 252, 0.1), transparent 28%),
+    linear-gradient(120deg, rgba(10, 20, 39, 0.92), rgba(7, 14, 28, 0.84));
+}
+
+.strata-band--peaks {
+  background:
+    radial-gradient(circle at 85% 40%, rgba(245, 158, 11, 0.14), transparent 36%),
+    radial-gradient(circle at 14% 16%, rgba(147, 197, 253, 0.09), transparent 28%),
+    linear-gradient(120deg, rgba(13, 23, 42, 0.92), rgba(9, 15, 29, 0.86));
+}
+
+.strata-band--narrative {
+  background:
+    radial-gradient(circle at 75% 18%, rgba(52, 211, 168, 0.11), transparent 28%),
+    radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.08), transparent 32%),
+    linear-gradient(120deg, rgba(11, 21, 38, 0.9), rgba(8, 14, 26, 0.84));
+}
+
+.strata-band--contract {
+  background:
+    radial-gradient(circle at 25% 20%, rgba(34, 211, 238, 0.13), transparent 34%),
+    radial-gradient(circle at 85% 78%, rgba(245, 158, 11, 0.06), transparent 28%),
+    linear-gradient(120deg, rgba(10, 18, 35, 0.92), rgba(7, 12, 23, 0.88));
+}
+
+.strata-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(245, 158, 11, 0.92);
+}
+
+.strata-title-gradient {
+  background: linear-gradient(90deg, #f8fbff 0%, #dbeafe 35%, #fde68a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.strata-subtle-rule {
+  height: 1px;
+  width: 100%;
+  margin-top: 0.9rem;
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.55), rgba(245, 158, 11, 0.15), transparent 80%);
+}
+
+.strata-premium-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(125, 211, 252, 0.1), transparent 44%),
+    radial-gradient(circle at 20% 120%, rgba(245, 158, 11, 0.06), transparent 38%),
+    linear-gradient(130deg, rgba(15, 25, 44, 0.78), rgba(10, 17, 31, 0.66));
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.strata-data-chip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.4rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.strata-hero-minimal {
+  padding-top: max(3.5rem, 8vh);
+  padding-bottom: max(3.5rem, 8vh);
+}
+
+.strata-hero-search-shell {
+  width: min(100%, 48rem);
+}
+
+.strata-reveal-shell {
+  isolation: isolate;
+}
+
+.strata-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .strata-shell {
+    width: min(1180px, calc(100% - 1.25rem));
+  }
+
+  .strata-nav-panel {
+    padding: 0.55rem 0.7rem;
+  }
+
+  .strata-kpi-card {
+    padding: 0.58rem 0.65rem;
+  }
+
+  .strata-kpi-meta {
+    font-size: 0.66rem;
+    color: rgba(203, 213, 225, 0.92);
+  }
+}
+
+@media (min-width: 1420px) {
+  .storyline-rail {
+    display: block;
+  }
+}
+
+@media (max-width: 1024px) {
+  .strata-nav-panel {
+    border-radius: 1rem;
+  }
+
+  .strata-kpi-ribbon {
+    padding: 0.62rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .strata-footer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
